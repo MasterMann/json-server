@@ -58,11 +58,11 @@ module.exports = (db, name, opts) => {
     let _start = req.query._start
     let _end = req.query._end
     let _page = req.query._page
-    let _sort = req.query._sort
-    let _order = req.query._order
+    const _sort = req.query._sort
+    const _order = req.query._order
     let _limit = req.query._limit
-    let _embed = req.query._embed
-    let _expand = req.query._expand
+    const _embed = req.query._embed
+    const _expand = req.query._expand
     delete req.query.q
     delete req.query._start
     delete req.query._end
@@ -76,7 +76,7 @@ module.exports = (db, name, opts) => {
     // in the database
     Object.keys(req.query).forEach(query => {
       const arr = db.get(name).value()
-      for (let i in arr) {
+      for (const i in arr) {
         if (
           _.has(arr[i], query) ||
           query === 'callback' ||
@@ -100,7 +100,7 @@ module.exports = (db, name, opts) => {
       q = q.toLowerCase()
 
       chain = chain.filter(obj => {
-        for (let key in obj) {
+        for (const key in obj) {
           const value = obj[key]
           if (db._.deepQuery(value, q)) {
             return true
@@ -116,13 +116,14 @@ module.exports = (db, name, opts) => {
         // Always use an array, in case req.query is an array
         const arr = [].concat(req.query[key])
 
+        const isDifferent = /_ne$/.test(key)
+        const isRange = /_lte$/.test(key) || /_gte$/.test(key)
+        const isLike = /_like$/.test(key)
+        const path = key.replace(/(_lte|_gte|_ne|_like)$/, '')
+
         chain = chain.filter(element => {
           return arr
             .map(function(value) {
-              const isDifferent = /_ne$/.test(key)
-              const isRange = /_lte$/.test(key) || /_gte$/.test(key)
-              const isLike = /_like$/.test(key)
-              const path = key.replace(/(_lte|_gte|_ne|_like)$/, '')
               // get item value based on path
               // i.e post.title -> 'foo'
               const elementValue = _.get(element, path)
@@ -146,7 +147,7 @@ module.exports = (db, name, opts) => {
                 return value === elementValue.toString()
               }
             })
-            .reduce((a, b) => a || b)
+            .reduce((a, b) => (isDifferent ? a && b : a || b))
         })
       }
     })
